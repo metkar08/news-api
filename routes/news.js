@@ -3,18 +3,18 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-const dateLimit = `AND yayin_tarihi >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND YEAR(yayin_tarihi) >= 2019`;
+const dateLimit = `AND Olusturulma >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND YEAR(Olusturulma) >= 2019`;
 
 router.get('/headlines', async (req, res) => {
   const limit = parseInt(req.query.limit) || 5;
   try {
     const [rows] = await db.query(`
-      SELECT h.id, h.baslik AS title, h.ozet AS summary, h.resim_dosya_adi AS image_filename,
-             h.yayin_tarihi AS publish_date, k.adi AS category_name, h.web_url
+      SELECT h.Id AS id, h.HaberBaslik AS title, h.Ozet AS summary, h.Resim AS image_filename,
+             h.Olusturulma AS publish_date, k.adi AS category_name, h.Link AS web_url
       FROM haberler h
-      JOIN haberkategori k ON h.kategori_id = k.id
+      JOIN haberkategori k ON h.KatId = k.id
       WHERE 1=1 ${dateLimit}
-      ORDER BY h.yayin_tarihi DESC
+      ORDER BY h.Olusturulma DESC
       LIMIT ?
     `, [limit]);
     res.json(rows);
@@ -29,12 +29,12 @@ router.get('/latest', async (req, res) => {
   const offset = (page - 1) * limit;
   try {
     const [articles] = await db.query(`
-      SELECT h.id, h.baslik AS title, h.ozet AS summary, h.resim_dosya_adi AS image_filename,
-             h.yayin_tarihi AS publish_date, k.adi AS category_name, h.web_url
+      SELECT h.Id AS id, h.HaberBaslik AS title, h.Ozet AS summary, h.Resim AS image_filename,
+             h.Olusturulma AS publish_date, k.adi AS category_name, h.Link AS web_url
       FROM haberler h
-      JOIN haberkategori k ON h.kategori_id = k.id
+      JOIN haberkategori k ON h.KatId = k.id
       WHERE 1=1 ${dateLimit}
-      ORDER BY h.yayin_tarihi DESC
+      ORDER BY h.Olusturulma DESC
       LIMIT ? OFFSET ?
     `, [limit, offset]);
 
@@ -72,16 +72,16 @@ router.get('/category/:idOrSlug', async (req, res) => {
     const categoryId = category[0].id;
 
     const [articles] = await db.query(`
-      SELECT h.id, h.baslik AS title, h.ozet AS summary, h.resim_dosya_adi AS image_filename,
-             h.yayin_tarihi AS publish_date, k.adi AS category_name, h.web_url
+      SELECT h.Id AS id, h.HaberBaslik AS title, h.Ozet AS summary, h.Resim AS image_filename,
+             h.Olusturulma AS publish_date, k.adi AS category_name, h.Link AS web_url
       FROM haberler h
-      JOIN haberkategori k ON h.kategori_id = k.id
-      WHERE h.kategori_id = ? ${dateLimit}
-      ORDER BY h.yayin_tarihi DESC
+      JOIN haberkategori k ON h.KatId = k.id
+      WHERE h.KatId = ? ${dateLimit}
+      ORDER BY h.Olusturulma DESC
       LIMIT ? OFFSET ?
     `, [categoryId, limit, offset]);
 
-    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler WHERE kategori_id = ? ${dateLimit}`, [categoryId]);
+    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler WHERE KatId = ? ${dateLimit}`, [categoryId]);
     const total = count[0].total;
     const hasMore = offset + limit < total;
 
@@ -95,17 +95,17 @@ router.get('/article/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   try {
     const [rows] = await db.query(`
-      SELECT h.id, h.baslik AS title, h.ozet AS summary, h.icerik AS content,
-             h.resim_dosya_adi AS image_filename, h.yayin_tarihi AS publish_date,
-             k.adi AS category_name, h.web_url, h.goruntulenme_sayisi AS view_count
+      SELECT h.Id AS id, h.HaberBaslik AS title, h.Ozet AS summary, h.Icerik AS content,
+             h.Resim AS image_filename, h.Olusturulma AS publish_date,
+             k.adi AS category_name, h.Link AS web_url, h.Okunma AS view_count
       FROM haberler h
-      JOIN haberkategori k ON h.kategori_id = k.id
-      WHERE h.id = ? ${dateLimit}
+      JOIN haberkategori k ON h.KatId = k.id
+      WHERE h.Id = ? ${dateLimit}
     `, [id]);
 
     if (!rows.length) return res.status(404).json({ error: 'Article not found' });
 
-    await db.query(`UPDATE haberler SET goruntulenme_sayisi = goruntulenme_sayisi + 1 WHERE id = ?`, [id]);
+    await db.query(`UPDATE haberler SET Okunma = Okunma + 1 WHERE Id = ?`, [id]);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -120,18 +120,18 @@ router.get('/search', async (req, res) => {
   if (!query) return res.status(400).json({ error: 'Query parameter is required' });
   try {
     const [articles] = await db.query(`
-      SELECT h.id, h.baslik AS title, h.ozet AS summary, h.resim_dosya_adi AS image_filename,
-             h.yayin_tarihi AS publish_date, k.adi AS category_name, h.web_url
+      SELECT h.Id AS id, h.HaberBaslik AS title, h.Ozet AS summary, h.Resim AS image_filename,
+             h.Olusturulma AS publish_date, k.adi AS category_name, h.Link AS web_url
       FROM haberler h
-      JOIN haberkategori k ON h.kategori_id = k.id
-      WHERE (h.baslik LIKE ? OR h.ozet LIKE ?) ${dateLimit}
-      ORDER BY h.yayin_tarihi DESC
+      JOIN haberkategori k ON h.KatId = k.id
+      WHERE (h.HaberBaslik LIKE ? OR h.Ozet LIKE ?) ${dateLimit}
+      ORDER BY h.Olusturulma DESC
       LIMIT ? OFFSET ?
     `, [`%${query}%`, `%${query}%`, limit, offset]);
 
     const [count] = await db.query(`
       SELECT COUNT(*) AS total FROM haberler
-      WHERE (baslik LIKE ? OR ozet LIKE ?) ${dateLimit}
+      WHERE (HaberBaslik LIKE ? OR Ozet LIKE ?) ${dateLimit}
     `, [`%${query}%`, `%${query}%`]);
 
     const total = count[0].total;
