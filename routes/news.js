@@ -39,7 +39,7 @@ router.get('/latest', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [limit, offset]);
 
-    const [count] = await db.query(\`SELECT COUNT(*) AS total FROM haberler WHERE 1=1 ${dateLimit}\`);
+    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler WHERE 1=1 ${dateLimit}`);
     const total = count[0].total;
     const hasMore = offset + limit < total;
 
