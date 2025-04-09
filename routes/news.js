@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-const dateLimit = `AND Olusturulma >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND YEAR(Olusturulma) >= 2019`;
+const dateLimit = `AND h.Olusturulma >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND YEAR(h.Olusturulma) >= 2019`;
 
 router.get('/headlines', async (req, res) => {
   const limit = parseInt(req.query.limit) || 5;
@@ -38,7 +38,7 @@ router.get('/latest', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [limit, offset]);
 
-    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler WHERE 1=1 ${dateLimit}`);
+    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler h WHERE 1=1 ${dateLimit}`);
     const total = count[0].total;
     const hasMore = offset + limit < total;
 
@@ -81,7 +81,7 @@ router.get('/category/:idOrSlug', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [categoryId, limit, offset]);
 
-    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler WHERE KatId = ? ${dateLimit}`, [categoryId]);
+    const [count] = await db.query(`SELECT COUNT(*) AS total FROM haberler h WHERE KatId = ? ${dateLimit}`, [categoryId]);
     const total = count[0].total;
     const hasMore = offset + limit < total;
 
@@ -130,7 +130,7 @@ router.get('/search', async (req, res) => {
     `, [`%${query}%`, `%${query}%`, limit, offset]);
 
     const [count] = await db.query(`
-      SELECT COUNT(*) AS total FROM haberler
+      SELECT COUNT(*) AS total FROM haberler h
       WHERE (HaberBaslik LIKE ? OR Ozet LIKE ?) ${dateLimit}
     `, [`%${query}%`, `%${query}%`]);
 
