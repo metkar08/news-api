@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { decode } = require('html-entities');
 
 const dateLimit = `AND h.Olusturulma >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND YEAR(h.Olusturulma) >= 2019`;
 
